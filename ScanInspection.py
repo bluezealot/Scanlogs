@@ -7,11 +7,13 @@ class inspection_data:
     is_start: bool
     datetime: str
     spend_time: str
-    def __init__(self, pcontent = None, pisstart = None, pdatetime = None, pspendtime = None):
+    is_out: str
+    def __init__(self, pcontent = None, pisstart = None, pdatetime = None, pspendtime = None, pisout = None):
         self.datetime = pdatetime
         self.is_start = pisstart
         self.content = pcontent
         self.spend_time = pspendtime
+        self.is_out = pisout
 
     def to_csv(self):
         result = ''
@@ -27,6 +29,10 @@ class inspection_data:
             result += "\",\"" + self.spend_time.replace("\"", "\"\"")
         if self.content is not None:
             result += "\",\"" + self.content.replace("\"", "\"\"").replace("\n", "")
+        if self.is_out is not None:
+            result += "\",\"" + self.is_out.replace("\"", "\"\"").replace("\n", "")
+        if self.is_out is None:
+            result += "\",\"" + "false".replace("\"", "\"\"").replace("\n", "")
         result += "\""
         result += "\n"
         return result
@@ -95,22 +101,30 @@ with open("output_outInspect.csv", "w") as file_out:
                                     instart_time = ''
                                     inspend_time = str(0)
                                     file_in.write(odata.to_csv())
-                                if line.__contains__("Start navigate to"):
+                                if line.__contains__("Start navigate to") and not line.__contains__("fbcd09637f954f29b64ae31f53b25d3a"):
                                     matches = re.findall(datetime_pattern, line)
                                     time_span = 0
-                                    if navstart_time:
-                                        time = caluclate_timespan(navstart_time, matches[0])
-                                        time_span = time.total_seconds()
+                                    # if navstart_time:
+                                    #     time = caluclate_timespan(navstart_time, matches[0])
+                                    #     time_span = time.total_seconds()
                                     navstart_time = matches[0]
-                                    odata = inspection_data(line, True, matches[0], str(time_span))
+                                    odata = inspection_data(line, True, matches[0], str(0))
+                                    if start_time:
+                                        odata = inspection_data(line, True, matches[0], str(0), '呼び')
+                                    if instart_time:
+                                        odata = inspection_data(line, True, matches[0], str(0), '巡回')
                                     file_nav.write(odata.to_csv())
-                                if line.__contains__("End navigate to"):
+                                if line.__contains__("End navigate to") or line.__contains__("BaseActivity stopNavi"):
                                     matches = re.findall(datetime_pattern, line)
                                     time_span = 0
                                     if navstart_time:
                                         time = caluclate_timespan(navstart_time, matches[0])
                                         time_span = time.total_seconds()
                                     odata = inspection_data(line, False, matches[0], str(time_span))
+                                    if start_time:
+                                        odata = inspection_data(line, False, matches[0], str(time_span), '呼び')
+                                    if instart_time:
+                                        odata = inspection_data(line, False, matches[0], str(time_span), '巡回')
                                     navstart_time = ''
                                     file_nav.write(odata.to_csv())
                                 line = file_read.readline()
